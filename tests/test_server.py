@@ -5,6 +5,21 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mssql_mcp import server
+from tests.conftest import get_tool_fn
+
+# Extract the underlying functions from FunctionTool wrappers
+list_schemas = get_tool_fn(server.list_schemas)
+list_tables = get_tool_fn(server.list_tables)
+list_views = get_tool_fn(server.list_views)
+list_procedures = get_tool_fn(server.list_procedures)
+describe_table = get_tool_fn(server.describe_table)
+describe_procedure = get_tool_fn(server.describe_procedure)
+search_tables = get_tool_fn(server.search_tables)
+search_columns = get_tool_fn(server.search_columns)
+get_table_sample = get_tool_fn(server.get_table_sample)
+get_table_stats = get_tool_fn(server.get_table_stats)
+query = get_tool_fn(server.query)
+execute_procedure = get_tool_fn(server.execute_procedure)
 
 
 class TestConnectionString:
@@ -133,7 +148,7 @@ class TestListSchemas:
             ("sales", "admin"),
         ]
 
-        result = server.list_schemas()
+        result = list_schemas()
 
         assert len(result) == 2
         assert result[0]["schema_name"] == "dbo"
@@ -151,7 +166,7 @@ class TestListTables:
             ("dbo", "Orders", "BASE TABLE"),
         ]
 
-        result = server.list_tables()
+        result = list_tables()
 
         assert len(result) == 2
         assert result[0]["TABLE_NAME"] == "Users"
@@ -163,7 +178,7 @@ class TestListTables:
             ("sales", "Customers", "BASE TABLE"),
         ]
 
-        result = server.list_tables(schema="sales")
+        result = list_tables(schema="sales")
 
         assert len(result) == 1
         assert result[0]["TABLE_SCHEMA"] == "sales"
@@ -179,7 +194,7 @@ class TestListViews:
             ("dbo", "vw_ActiveUsers", "VIEW"),
         ]
 
-        result = server.list_views()
+        result = list_views()
 
         assert len(result) == 1
         assert result[0]["TABLE_NAME"] == "vw_ActiveUsers"
@@ -198,7 +213,7 @@ class TestListProcedures:
             ("dbo", "sp_GetUser", "2024-01-01", "2024-01-02", 2),
         ]
 
-        result = server.list_procedures()
+        result = list_procedures()
 
         assert len(result) == 1
         assert result[0]["procedure_name"] == "sp_GetUser"
@@ -221,7 +236,7 @@ class TestDescribeTable:
             [],  # Indexes
         ]
 
-        result = server.describe_table("Users")
+        result = describe_table("Users")
 
         assert result["table_name"] == "Users"
         assert len(result["columns"]) == 2
@@ -232,7 +247,7 @@ class TestDescribeTable:
         mock_cursor.description = [("COLUMN_NAME",)]
         mock_cursor.fetchall.return_value = []
 
-        result = server.describe_table("NonExistent")
+        result = describe_table("NonExistent")
 
         assert result["error"] is True
         assert result["error_type"] == "not_found"
@@ -249,7 +264,7 @@ class TestQuery:
             (2, "Bob"),
         ])
 
-        result = server.query("SELECT * FROM Users")
+        result = query("SELECT * FROM Users")
 
         assert result["columns"] == ["id", "name"]
         assert len(result["rows"]) == 2
@@ -260,7 +275,7 @@ class TestQuery:
         mock_cursor.description = [("id",)]
         mock_cursor.__iter__ = lambda self: iter([(i,) for i in range(100)])
 
-        result = server.query("SELECT * FROM LargeTable", limit=10)
+        result = query("SELECT * FROM LargeTable", limit=10)
 
         assert len(result["rows"]) == 10
         assert result["truncated"] is True
@@ -270,7 +285,7 @@ class TestQuery:
         mock_cursor.description = None
         mock_cursor.rowcount = 5
 
-        result = server.query("INSERT INTO Users (name) VALUES ('Test')")
+        result = query("INSERT INTO Users (name) VALUES ('Test')")
 
         assert result["row_count"] == 5
         assert "affected" in result["message"]
@@ -280,7 +295,7 @@ class TestQuery:
         mock_cursor.description = [("name",)]
         mock_cursor.__iter__ = lambda self: iter([("Alice",)])
 
-        result = server.query("SELECT name FROM Users WHERE id = ?", params=[1])
+        result = query("SELECT name FROM Users WHERE id = ?", params=[1])
 
         mock_cursor.execute.assert_called_with("SELECT name FROM Users WHERE id = ?", [1])
 
@@ -296,7 +311,7 @@ class TestSearchTables:
             ("dbo", "CustomerOrders", "BASE TABLE"),
         ]
 
-        result = server.search_tables("%Customer%")
+        result = search_tables("%Customer%")
 
         assert len(result) == 2
 
@@ -315,7 +330,7 @@ class TestSearchColumns:
             ("dbo", "Contacts", "email_address", "nvarchar", "NO"),
         ]
 
-        result = server.search_columns("%email%")
+        result = search_columns("%email%")
 
         assert len(result) == 2
 
@@ -331,7 +346,7 @@ class TestGetTableSample:
             (2, "Bob"),
         ]
 
-        result = server.get_table_sample("Users", rows=5)
+        result = get_table_sample("Users", rows=5)
 
         assert result["table_name"] == "Users"
         assert len(result["rows"]) == 2
@@ -341,7 +356,7 @@ class TestGetTableSample:
         mock_cursor.description = [("id",)]
         mock_cursor.fetchall.return_value = []
 
-        server.get_table_sample("Users", rows=500)
+        get_table_sample("Users", rows=500)
 
         # Check that TOP 100 was used, not TOP 500
         call_args = mock_cursor.execute.call_args[0][0]
@@ -357,7 +372,7 @@ class TestGetTableStats:
             "dbo", "Users", 1000, 8192, 4096, "2024-01-01", "2024-01-02"
         )
 
-        result = server.get_table_stats("Users")
+        result = get_table_stats("Users")
 
         assert result["row_count"] == 1000
         assert result["total_space_kb"] == 8192
@@ -367,7 +382,7 @@ class TestGetTableStats:
         """Test table not found."""
         mock_cursor.fetchone.return_value = None
 
-        result = server.get_table_stats("NonExistent")
+        result = get_table_stats("NonExistent")
 
         assert result["error"] is True
         assert result["error_type"] == "not_found"
@@ -382,7 +397,7 @@ class TestExecuteProcedure:
         mock_cursor.fetchall.return_value = [("success",)]
         mock_cursor.nextset.return_value = False
 
-        result = server.execute_procedure("sp_Test")
+        result = execute_procedure("sp_Test")
 
         assert result["procedure"] == "dbo.sp_Test"
         assert len(result["result_sets"]) == 1
@@ -392,7 +407,7 @@ class TestExecuteProcedure:
         mock_cursor.description = None
         mock_cursor.nextset.return_value = False
 
-        server.execute_procedure("sp_UpdateUser", params={"@userId": 1, "@name": "Test"})
+        execute_procedure("sp_UpdateUser", params={"@userId": 1, "@name": "Test"})
 
         call_args = mock_cursor.execute.call_args[0][0]
         assert "@userId = ?" in call_args

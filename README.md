@@ -2,6 +2,14 @@
 
 MCP (Model Context Protocol) server for Microsoft SQL Server using pyodbc.
 
+## Features
+
+- 12 tools for database exploration and querying
+- Windows and SQL Server authentication
+- Connection pooling with health checks
+- Query timeout and row limits
+- Structured error handling
+
 ## Installation
 
 ### From Git (recommended for local use)
@@ -20,16 +28,19 @@ uvx mssql-mcp
 
 ## Configuration
 
-Set the following environment variables:
+### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MSSQL_SERVER` | Yes | SQL Server hostname or IP address |
-| `MSSQL_DATABASE` | Yes | Database name |
-| `MSSQL_WINDOWS_AUTH` | No | Set to `true` for Windows authentication |
-| `MSSQL_USER` | Conditional | Username (required if not using Windows auth) |
-| `MSSQL_PASSWORD` | Conditional | Password (required if not using Windows auth) |
-| `MSSQL_DRIVER` | No | ODBC driver name (auto-detected if not set) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `MSSQL_SERVER` | Yes | - | SQL Server hostname or IP address |
+| `MSSQL_DATABASE` | Yes | - | Database name |
+| `MSSQL_WINDOWS_AUTH` | No | `false` | Set to `true` for Windows authentication |
+| `MSSQL_USER` | Conditional | - | Username (required if not using Windows auth) |
+| `MSSQL_PASSWORD` | Conditional | - | Password (required if not using Windows auth) |
+| `MSSQL_DRIVER` | No | auto | ODBC driver name (auto-detected if not set) |
+| `MSSQL_QUERY_TIMEOUT` | No | `30` | Query timeout in seconds |
+| `MSSQL_MAX_ROWS` | No | `1000` | Default max rows returned by queries |
+| `MSSQL_DEBUG` | No | `false` | Enable debug logging to stderr |
 
 ### Connection Security
 
@@ -43,37 +54,15 @@ All connections use:
 
 Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 
-#### Windows Authentication
-
 ```json
 {
   "mcpServers": {
     "mssql": {
-      "command": "uvx",
-      "args": ["mssql-mcp"],
+      "command": "mssql-mcp",
       "env": {
-        "MSSQL_SERVER": "your-server.database.windows.net",
+        "MSSQL_SERVER": "your-server",
         "MSSQL_DATABASE": "your-database",
         "MSSQL_WINDOWS_AUTH": "true"
-      }
-    }
-  }
-}
-```
-
-#### SQL Server Authentication
-
-```json
-{
-  "mcpServers": {
-    "mssql": {
-      "command": "uvx",
-      "args": ["mssql-mcp"],
-      "env": {
-        "MSSQL_SERVER": "your-server.database.windows.net",
-        "MSSQL_DATABASE": "your-database",
-        "MSSQL_USER": "your-username",
-        "MSSQL_PASSWORD": "your-password"
       }
     }
   }
@@ -107,42 +96,86 @@ $env:MSSQL_SERVER="your-server"; $env:MSSQL_DATABASE="your-db"; $env:MSSQL_WINDO
 
 ## Tools
 
-### list_tables
+### Discovery Tools
 
+#### list_schemas
+List all schemas in the database.
+
+#### list_tables
 List all tables in the database.
+- `schema` (optional): Filter by schema name
+- `include_row_counts` (optional): Include approximate row counts
 
-**Parameters:**
-- `schema` (optional): Filter tables by schema name
+#### list_views
+List all views in the database.
+- `schema` (optional): Filter by schema name
 
-**Example:**
-```
-List all tables in the dbo schema
-```
+#### list_procedures
+List all stored procedures in the database.
+- `schema` (optional): Filter by schema name
 
-### describe_table
+### Description Tools
 
-Get detailed information about a table's structure including columns, primary keys, foreign keys, and indexes.
-
-**Parameters:**
+#### describe_table
+Get detailed information about a table's structure.
 - `table_name` (required): Name of the table
 - `schema` (optional, default: "dbo"): Schema name
 
-**Example:**
-```
-Describe the Users table structure
-```
+Returns columns, primary keys, foreign keys, and indexes.
 
-### query
+#### describe_procedure
+Get detailed information about a stored procedure.
+- `procedure_name` (required): Name of the procedure
+- `schema` (optional, default: "dbo"): Schema name
 
+Returns parameters and procedure definition.
+
+### Search Tools
+
+#### search_tables
+Search for tables and views matching a pattern.
+- `pattern` (required): Search pattern (use `%` for wildcards)
+- `include_views` (optional, default: true): Include views in results
+
+#### search_columns
+Search for columns matching a pattern across all tables.
+- `pattern` (required): Column name pattern (use `%` for wildcards)
+- `table_pattern` (optional): Filter by table name pattern
+
+### Data Tools
+
+#### get_table_sample
+Get sample rows from a table.
+- `table_name` (required): Name of the table
+- `schema` (optional, default: "dbo"): Schema name
+- `rows` (optional, default: 10, max: 100): Number of rows
+
+#### get_table_stats
+Get statistics for a table including row count and size.
+- `table_name` (required): Name of the table
+- `schema` (optional, default: "dbo"): Schema name
+
+#### query
 Execute a SQL query and return results.
-
-**Parameters:**
 - `sql` (required): The SQL query to execute
 - `params` (optional): List of parameters for parameterized queries
+- `limit` (optional): Max rows to return (default: MSSQL_MAX_ROWS)
 
-**Example:**
-```
-Run a query to get the top 10 customers by order count
+Returns rows as dictionaries. Results are truncated if they exceed the limit.
+
+#### execute_procedure
+Execute a stored procedure.
+- `procedure_name` (required): Name of the procedure
+- `schema` (optional, default: "dbo"): Schema name
+- `params` (optional): Dictionary of parameter names to values
+
+## Development
+
+### Running Tests
+
+```bash
+uv pip install -e ".[dev]" --system
+pytest
 ```
 
 ## Requirements

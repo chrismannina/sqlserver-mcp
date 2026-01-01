@@ -6,6 +6,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+def get_tool_fn(tool):
+    """Extract the underlying function from a FastMCP FunctionTool."""
+    # FastMCP wraps functions in FunctionTool objects
+    # The original function is accessible via .fn attribute
+    if hasattr(tool, 'fn'):
+        return tool.fn
+    return tool
+
+
 @pytest.fixture
 def mock_env(monkeypatch):
     """Set up environment variables for testing."""
