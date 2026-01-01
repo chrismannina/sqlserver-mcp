@@ -23,6 +23,12 @@ dependencies = [
     "pyodbc>=5.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+]
+
 [project.scripts]
 mssql-mcp = "mssql_mcp.server:main"
 
@@ -38,3 +44,7 @@ include = [
     "/src",
     "/README.md",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
