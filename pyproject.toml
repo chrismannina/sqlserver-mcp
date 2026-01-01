@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "machris"}
+    {name = "Chris Mannina"}
 ]
 keywords = ["mcp", "sql-server", "mssql", "pyodbc", "fastmcp"]
 classifiers = [
