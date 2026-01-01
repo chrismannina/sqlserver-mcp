@@ -1,2 +1,2 @@
 .claude
-src\mssql_mcp\__pycache__
+*\__pycache__\*
