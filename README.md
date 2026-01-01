@@ -4,14 +4,18 @@ MCP (Model Context Protocol) server for Microsoft SQL Server using pyodbc.
 
 ## Installation
 
+### From Git (recommended for local use)
+
 ```bash
-uvx mssql-mcp
+git clone <your-repo-url> mssql-mcp
+cd mssql-mcp
+uv pip install -e . --system
 ```
 
-Or install from source:
+### From PyPI (not yet published)
 
 ```bash
-uv pip install .
+uvx mssql-mcp
 ```
 
 ## Configuration
@@ -76,14 +80,29 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 }
 ```
 
-### Running Directly
+### With Claude Code
 
-```bash
-# Windows Authentication
-MSSQL_SERVER=localhost MSSQL_DATABASE=mydb MSSQL_WINDOWS_AUTH=true mssql-mcp
+Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 
-# SQL Server Authentication
-MSSQL_SERVER=localhost MSSQL_DATABASE=mydb MSSQL_USER=sa MSSQL_PASSWORD=secret mssql-mcp
+```json
+{
+  "mcpServers": {
+    "mssql": {
+      "command": "mssql-mcp",
+      "env": {
+        "MSSQL_SERVER": "your-server",
+        "MSSQL_DATABASE": "your-database",
+        "MSSQL_WINDOWS_AUTH": "true"
+      }
+    }
+  }
+}
+```
+
+### Running Directly (PowerShell)
+
+```powershell
+$env:MSSQL_SERVER="your-server"; $env:MSSQL_DATABASE="your-db"; $env:MSSQL_WINDOWS_AUTH="true"; mssql-mcp
 ```
 
 ## Tools
