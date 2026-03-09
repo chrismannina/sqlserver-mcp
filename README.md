@@ -88,6 +88,57 @@ Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 }
 ```
 
+### With OpenCode
+
+Add `mssql-mcp` to either:
+- `~/.config/opencode/opencode.json` for your user-wide config
+- `opencode.json` in a project root for project-specific config
+
+If you already use OpenCode with another provider, keep your existing `provider` and `model` entries and add the `mcp` block below.
+Prefer environment variable substitution for credentials instead of storing passwords directly in `opencode.json`.
+
+Example:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "litellm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LiteLLM Proxy",
+      "options": {
+        "baseURL": "http://localhost:4000/v1"
+      },
+      "models": {
+        "umgpt": { "name": "UMGPT GPT 5.1" }
+      }
+    }
+  },
+  "model": "litellm/umgpt",
+  "mcp": {
+    "pharmdw": {
+      "type": "local",
+      "command": ["mssql-mcp"],
+      "enabled": true,
+      "environment": {
+        "MSSQL_SERVER": "{env:MSSQL_SERVER}",
+        "MSSQL_DATABASE": "{env:MSSQL_DATABASE}",
+        "MSSQL_USER": "{env:MSSQL_USER}",
+        "MSSQL_PASSWORD": "{env:MSSQL_PASSWORD}"
+      }
+    }
+  }
+}
+```
+
+For Windows authentication, replace the user/password entries with:
+
+```json
+{
+  "MSSQL_WINDOWS_AUTH": "true"
+}
+```
+
 ### Running Directly (PowerShell)
 
 ```powershell
