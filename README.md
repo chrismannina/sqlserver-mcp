@@ -105,16 +105,19 @@ Example:
   "provider": {
     "litellm": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "LiteLLM Proxy",
+      "name": "UMGPT Proxy",
       "options": {
         "baseURL": "http://localhost:4000/v1"
       },
       "models": {
-        "umgpt": { "name": "UMGPT GPT 5.1" }
+        "umgpt": { "name": "UMGPT GPT 5.1" },
+        "umgpt-52": { "name": "UMGPT GPT 5.2" },
+        "umgpt-mini": { "name": "UMGPT GPT 5 Mini" },
+        "umgpt-nano": { "name": "UMGPT GPT 5 Nano" }
       }
     }
   },
-  "model": "litellm/umgpt",
+  "model": "umgpt/umgpt",
   "mcp": {
     "pharmdw": {
       "type": "local",
