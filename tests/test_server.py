@@ -1,10 +1,10 @@
-"""Tests for mssql-mcp server."""
+"""Tests for sqlserver-mcp server."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mssql_mcp import server
+from sqlserver_mcp import server
 from tests.conftest import get_tool_fn
 
 # Extract the underlying functions from FunctionTool wrappers

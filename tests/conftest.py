@@ -1,4 +1,4 @@
-"""Pytest fixtures for mssql-mcp tests."""
+"""Pytest fixtures for sqlserver-mcp tests."""
 
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
@@ -60,7 +60,7 @@ def mock_connection(mock_cursor):
 @pytest.fixture
 def mock_pyodbc(mock_connection) -> Generator[MagicMock, None, None]:
     """Mock pyodbc.connect to return mock connection."""
-    with patch("mssql_mcp.server.pyodbc") as mock:
+    with patch("sqlserver_mcp.server.pyodbc") as mock:
         mock.connect.return_value = mock_connection
         mock.drivers.return_value = ["ODBC Driver 18 for SQL Server"]
         yield mock
@@ -69,7 +69,7 @@ def mock_pyodbc(mock_connection) -> Generator[MagicMock, None, None]:
 @pytest.fixture(autouse=True)
 def reset_connection():
     """Reset the global connection before each test."""
-    import mssql_mcp.server as server
+    import sqlserver_mcp.server as server
     server._connection = None
     yield
     server._connection = None

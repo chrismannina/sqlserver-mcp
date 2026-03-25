@@ -1,1 +1,1 @@
-"""Tests for mssql-mcp."""
+"""Tests for sqlserver-mcp."""

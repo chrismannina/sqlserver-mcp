@@ -1,4 +1,4 @@
-# mssql-mcp
+# sqlserver-mcp
 
 MCP (Model Context Protocol) server for Microsoft SQL Server using pyodbc.
 
@@ -12,18 +12,18 @@ MCP (Model Context Protocol) server for Microsoft SQL Server using pyodbc.
 
 ## Installation
 
-### From Git (recommended for local use)
+### From GitHub
 
 ```bash
-git clone <your-repo-url> mssql-mcp
-cd mssql-mcp
-uv pip install -e . --system
+uv pip install git+https://github.com/chrismannina/sqlserver-mcp.git --system
 ```
 
-### From PyPI (not yet published)
+### From source (for development)
 
 ```bash
-uvx mssql-mcp
+git clone git@github.com:chrismannina/sqlserver-mcp.git
+cd sqlserver-mcp
+uv pip install -e ".[dev]" --system
 ```
 
 ## Configuration
@@ -52,17 +52,18 @@ All connections use:
 
 ### With Claude Desktop
 
-Add to your Claude Desktop configuration (`claude_desktop_config.json`):
+Add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "mssql": {
-      "command": "mssql-mcp",
+      "command": "sqlserver-mcp",
       "env": {
         "MSSQL_SERVER": "your-server",
         "MSSQL_DATABASE": "your-database",
-        "MSSQL_WINDOWS_AUTH": "true"
+        "MSSQL_USER": "your-user",
+        "MSSQL_PASSWORD": "your-password"
       }
     }
   }
@@ -77,11 +78,12 @@ Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 {
   "mcpServers": {
     "mssql": {
-      "command": "mssql-mcp",
+      "command": "sqlserver-mcp",
       "env": {
         "MSSQL_SERVER": "your-server",
         "MSSQL_DATABASE": "your-database",
-        "MSSQL_WINDOWS_AUTH": "true"
+        "MSSQL_USER": "your-user",
+        "MSSQL_PASSWORD": "your-password"
       }
     }
   }
@@ -90,42 +92,18 @@ Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 
 ### With OpenCode
 
-Add `mssql-mcp` to either:
-- `~/.config/opencode/opencode.json` for your user-wide config
-- `opencode.json` in a project root for project-specific config
-
-If you already use OpenCode with another provider, keep your existing `provider` and `model` entries and add the `mcp` block below.
-Prefer environment variable substitution for credentials instead of storing passwords directly in `opencode.json`.
-
-Example:
+Add an `mcp` section to `opencode.json` or `~/.config/opencode/config.json`:
 
 ```json
 {
-  "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "litellm": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "UMGPT Proxy",
-      "options": {
-        "baseURL": "http://localhost:4000/v1"
-      },
-      "models": {
-        "umgpt": { "name": "UMGPT GPT 5.1" },
-        "umgpt-52": { "name": "UMGPT GPT 5.2" },
-        "umgpt-mini": { "name": "UMGPT GPT 5 Mini" },
-        "umgpt-nano": { "name": "UMGPT GPT 5 Nano" }
-      }
-    }
-  },
-  "model": "umgpt/umgpt",
   "mcp": {
-    "pharmdw": {
+    "mydb": {
       "type": "local",
-      "command": ["mssql-mcp"],
+      "command": ["sqlserver-mcp"],
       "enabled": true,
       "environment": {
-        "MSSQL_SERVER": "{env:MSSQL_SERVER}",
-        "MSSQL_DATABASE": "{env:MSSQL_DATABASE}",
+        "MSSQL_SERVER": "your-server",
+        "MSSQL_DATABASE": "your-database",
         "MSSQL_USER": "{env:MSSQL_USER}",
         "MSSQL_PASSWORD": "{env:MSSQL_PASSWORD}"
       }
@@ -134,102 +112,38 @@ Example:
 }
 ```
 
-For Windows authentication, replace the user/password entries with:
+### Running Directly
 
-```json
-{
-  "MSSQL_WINDOWS_AUTH": "true"
-}
-```
-
-### Running Directly (PowerShell)
-
-```powershell
-$env:MSSQL_SERVER="your-server"; $env:MSSQL_DATABASE="your-db"; $env:MSSQL_WINDOWS_AUTH="true"; mssql-mcp
+```bash
+MSSQL_SERVER=your-server MSSQL_DATABASE=your-db MSSQL_USER=user MSSQL_PASSWORD=pass sqlserver-mcp
 ```
 
 ## Tools
 
-### Discovery Tools
+### Discovery
+- **list_schemas** - List all schemas
+- **list_tables** - List tables (optionally by schema, with row counts)
+- **list_views** - List views (optionally by schema)
+- **list_procedures** - List stored procedures
 
-#### list_schemas
-List all schemas in the database.
+### Description
+- **describe_table** - Table structure (columns, PKs, FKs, indexes)
+- **describe_procedure** - Procedure details (parameters, definition)
 
-#### list_tables
-List all tables in the database.
-- `schema` (optional): Filter by schema name
-- `include_row_counts` (optional): Include approximate row counts
+### Search
+- **search_tables** - Find tables/views by pattern (`%` wildcards)
+- **search_columns** - Find columns across tables by pattern
 
-#### list_views
-List all views in the database.
-- `schema` (optional): Filter by schema name
-
-#### list_procedures
-List all stored procedures in the database.
-- `schema` (optional): Filter by schema name
-
-### Description Tools
-
-#### describe_table
-Get detailed information about a table's structure.
-- `table_name` (required): Name of the table
-- `schema` (optional, default: "dbo"): Schema name
-
-Returns columns, primary keys, foreign keys, and indexes.
-
-#### describe_procedure
-Get detailed information about a stored procedure.
-- `procedure_name` (required): Name of the procedure
-- `schema` (optional, default: "dbo"): Schema name
-
-Returns parameters and procedure definition.
-
-### Search Tools
-
-#### search_tables
-Search for tables and views matching a pattern.
-- `pattern` (required): Search pattern (use `%` for wildcards)
-- `include_views` (optional, default: true): Include views in results
-
-#### search_columns
-Search for columns matching a pattern across all tables.
-- `pattern` (required): Column name pattern (use `%` for wildcards)
-- `table_pattern` (optional): Filter by table name pattern
-
-### Data Tools
-
-#### get_table_sample
-Get sample rows from a table.
-- `table_name` (required): Name of the table
-- `schema` (optional, default: "dbo"): Schema name
-- `rows` (optional, default: 10, max: 100): Number of rows
-
-#### get_table_stats
-Get statistics for a table including row count and size.
-- `table_name` (required): Name of the table
-- `schema` (optional, default: "dbo"): Schema name
-
-#### query
-Execute a SQL query and return results.
-- `sql` (required): The SQL query to execute
-- `params` (optional): List of parameters for parameterized queries
-- `limit` (optional): Max rows to return (default: MSSQL_MAX_ROWS)
-
-Returns rows as dictionaries. Results are truncated if they exceed the limit.
-
-#### execute_procedure
-Execute a stored procedure.
-- `procedure_name` (required): Name of the procedure
-- `schema` (optional, default: "dbo"): Schema name
-- `params` (optional): Dictionary of parameter names to values
+### Data
+- **get_table_sample** - Sample rows (max 100)
+- **get_table_stats** - Row count, space usage, dates
+- **query** - Execute SQL with parameterized queries and row limits
+- **execute_procedure** - Run stored procedures with parameters
 
 ## Development
 
-### Running Tests
-
 ```bash
-uv pip install -e ".[dev]" --system
-pytest
+uv run --extra dev pytest -v
 ```
 
 ## Requirements
@@ -239,13 +153,6 @@ pytest
 
 ### Installing ODBC Driver
 
-**Windows:** Download from [Microsoft](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
-
-**macOS:**
-```bash
-brew install microsoft/mssql-release/msodbcsql18
-```
-
 **Linux (Ubuntu/Debian):**
 ```bash
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -253,6 +160,13 @@ curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list |
 sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
 ```
+
+**macOS:**
+```bash
+brew install microsoft/mssql-release/msodbcsql18
+```
+
+**Windows:** Download from [Microsoft](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
 
 ## License
 

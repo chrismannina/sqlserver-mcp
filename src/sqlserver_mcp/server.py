@@ -10,7 +10,7 @@ import pyodbc
 from fastmcp import FastMCP
 
 # Initialize the MCP server
-mcp = FastMCP("mssql-mcp")
+mcp = FastMCP("sqlserver-mcp")
 
 # Configure logging
 _debug = os.environ.get("MSSQL_DEBUG", "").lower() == "true"
